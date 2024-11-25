@@ -4,6 +4,7 @@ PREDICTING REAL ESTATE PRICES WITH MACHINE LEARNING IN R
 
 
 #Introduction:
+
 I've grabbed a dataset from Kaggle for housing sales price prediction. I've applied linear and
 neural network operations to it to obtain the desired output, and then I compared the results with the
 predefined values.
