@@ -1,0 +1,116 @@
+---
+title: "Final Submission"
+author: "Karthik Shingte"
+date: "2024-04-30"
+output: word_document
+---
+
+```{r}
+# Load the training data
+train_data <- read.csv("C:\\Users\\karthik\\OneDrive\\Desktop\\Spring 2024\\POM 681\\Final project\\house-prices-advanced-regression-techniques\\train.csv")
+
+# Check for missing values
+missing_value_counts <- colSums(is.na(train_data))
+
+# Identify columns with more than 50 missing values
+columns_to_remove <- names(missing_value_counts[missing_value_counts > 50])
+
+# Remove columns with more than 50 missing values
+cleaned_train_data <- train_data[, !names(train_data) %in% columns_to_remove]
+
+# Check for missing values in the training data
+missing_value_counts_train <- colSums(is.na(cleaned_train_data))
+
+# Identify columns with missing values
+columns_with_missing <- names(missing_value_counts_train[missing_value_counts_train > 0])
+
+# Impute missing values
+for (column in columns_with_missing) {
+  # For numerical columns, replace missing values with the mean of that column
+  if (is.numeric(cleaned_train_data[[column]])) {
+    cleaned_train_data[[column]][is.na(cleaned_train_data[[column]])] <- mean(cleaned_train_data[[column]], na.rm = TRUE)
+  }
+  # For categorical columns, replace missing values with the most frequent value of that column
+  else {
+    cleaned_train_data[[column]][is.na(cleaned_train_data[[column]])] <- names(sort(table(cleaned_train_data[[column]]), decreasing = TRUE))[1]
+  }
+}
+```
+
+
+```{r}
+#spliting the data
+
+set.seed(123)
+ind <- sample(2, nrow(cleaned_train_data), replace = T, prob = c(0.8, 0.2))
+train <- cleaned_train_data[ind == 1,]
+test <- cleaned_train_data[ind == 2,]
+
+```
+
+
+```{r}
+#lm model
+
+model <- lm(SalePrice ~ ., train)
+
+summary(model)
+
+# Get the model summary
+model_summary <- summary(model)
+
+# Get the p-values for each variable
+p_values <- model_summary$coefficients[, "Pr(>|t|)"]
+
+# Select variables with p-values less than 0.01
+selected_variables <- c("SalePrice", names(which(p_values < 0.01)))
+
+# Check if the selected variables are present in the cleaned data
+valid_variables <- intersect(selected_variables, names(cleaned_train_data))
+
+
+model_lm <- lm(SalePrice ~ ., data = train[, valid_variables])
+summary(model_lm)
+```
+
+
+```{r}
+# predictions for Lm model
+pedict<- predict(model_lm, newdata = train)
+
+
+plot(train$SalePrice,pedict, pch=c(1,3), col = c('red','blue'), main = 'Train Data Vs Predicted Values Plot')
+cor.test(pedict, train$SalePrice)
+
+predict_test <- predict(model_lm, test)
+
+plot(test$SalePrice, predict_test, pch = c(1,3), col = c('red','blue'), main = 'Test Data Vs Predicted Values Plot')
+cor.test(predict_test,test$SalePrice)
+```
+
+
+```{r}
+#Random Forest
+library(randomForest)
+# Train the Random Forest model after handling missing values
+rf_model <- randomForest(SalePrice ~ .,
+                         data = train[, valid_variables],
+                         ntree = 500,
+                         norm.votes = FALSE)
+
+```
+
+
+```{r}
+#Predictions
+
+pred_train <- predict(rf_model, newdata = train)
+
+plot(train$SalePrice, pred_train, pch = c(1,3), col = c('red','blue'), main = 'Train Data Vs Predicted Values Plot')
+cor.test(pred_train, train$SalePrice)
+
+pred_test <- predict(rf_model, newdata = test)
+plot(test$SalePrice, pred_test, pch = c(1,3), col = c('red','blue'), main = 'Test Data Vs Predicted Values Plot')
+cor.test(pred_test,test$SalePrice)
+
+```
